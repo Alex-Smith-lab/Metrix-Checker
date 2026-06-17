@@ -272,7 +272,14 @@
             padding-left: 16px;
             color: #4ade80;
         }
-        .fix-list li { margin-bottom: 4px; }
+        .fix-list li { 
+            margin-bottom: 4px; 
+            cursor: pointer;
+            text-decoration: underline dotted;
+        }
+        .fix-list li:hover {
+            color: #38bdf8;
+        }
 
         .helper-text {
             font-size: 0.75rem;
@@ -286,7 +293,7 @@
 <div class="container">
     <header>
         <div>
-            <h1>METRIX CHECK POINT/FLAGS <span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.1 PRO</span></h1>
+            <h1>METRIX CHECK POINT/FLAGS<span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.5 PRO</span></h1>
             <p class="subtitle">Automated Coworker Quality Control & Auditing Workspace</p>
         </div>
         <div class="metric-card" style="padding: 10px 24px; min-width: 150px; background: #0b111e;">
@@ -339,7 +346,7 @@
                     <li><strong>Rule 6 (Red Routes):</strong> Double Red lines require 24/7 Red Route annotation. Double Yellow lines are strictly excluded.</li>
                     <li><strong>Rule 7 (Bike Lanes):</strong> Requires concurrent Solid White line and Double Yellow lines/blips to annotate. Paint alone is disqualified.</li>
                     <li><strong>Rule 8 (Street Names):</strong> Complete expanded word strings required across all column entries (<span style="color:var(--danger)">No Rd, St, Ave, Wy, Pl</span>).</li>
-                    <li><strong style="color:var(--warning)">SPECIAL EXCEPTION:</strong> System checks columns labeled <code>BS NAME</code> or <code>BUS STOP NAME</code> and safely bypasses Rule 8 checks to protect standard municipal transit location keys.</li>
+                    <li><strong style="color:var(--warning)">CRITICAL PROTECTED EXCEPTION:</strong> System parses columns labeled <code>BS NAME</code>, <code>BUS NAME</code>, or <code>BUS STOP NAME</code> and completely ignores checking them to preserve structural transit codes safely.</li>
                 </ul>
             </div>
         </div>
@@ -367,16 +374,16 @@
     </div>
 
     <div class="results-box" id="resultsContainer">
-        <h2>4. Granular Row-by-Row Mistake Diagnostics Log</h2>
+        <h2>4. Granular Row-by-Row Mistake Diagnostics Log (Click Suggestion to Copy Word)</h2>
         <div class="table-scroll">
             <table id="discrepancyLogTable">
                 <thead>
                     <tr>
-                        <th style="width: 5%;">Row</th>
-                        <th style="width: 25%;">Identified Context / Location</th>
-                        <th style="width: 12%;">Status Gate</th>
-                        <th style="width: 29%;">Identified System Rule Violations</th>
-                        <th style="width: 29%;">Actionable Suggestion / Resolution Plan</th>
+                        <th style="width: 7%;">Sheet Row</th>
+                        <th style="width: 23%;">Identified Context / Location</th>
+                        <th style="width: 10%;">Status Gate</th>
+                        <th style="width: 30%;">Identified System Rule Violations</th>
+                        <th style="width: 30%;">Actionable Suggestion (Click to copy text)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -448,16 +455,23 @@
     function runQCAuditEngine() {
         const rawText = document.getElementById('rawPasteArea').value.trim();
         
-        if(!globalParsedMatrix && rawText) {
-            globalParsedMatrix = parseTextToMatrix(rawText);
-        }
-
-        if(!globalParsedMatrix || globalParsedMatrix.length === 0) {
+        if(!rawText && !globalParsedMatrix) {
             alert("Execution Denied: No input data stream targets located. Drop a file or paste rows inside Option B input panel.");
             return;
         }
+        if(rawText) {
+            globalParsedMatrix = parseTextToMatrix(rawText);
+        }
 
         executeRowEvaluation(globalParsedMatrix);
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(`Copied correction string to clipboard: "${text}"`);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
     }
 
     function executeRowEvaluation(matrixData) {
@@ -468,7 +482,7 @@
         
         let safeColumnIndexes = [];
         headerRow.forEach((colName, index) => {
-            if(colName === 'BS NAME' || colName === 'BUS STOP NAME' || colName === 'BS_NAME' || colName.includes('STOP NAME')) {
+            if(colName === 'BS NAME' || colName === 'BUS NAME' || colName === 'BUS STOP NAME' || colName === 'BS_NAME' || colName.includes('STOP NAME')) {
                 safeColumnIndexes.push(index);
             }
         });
@@ -479,6 +493,8 @@
         let totalPenalties = 0;
 
         matrixData.forEach((row, rowIndex) => {
+            let actualSheetRowIndex = rowIndex + 1; 
+
             if(rowIndex === 0 && (row.join('').toUpperCase().includes('LOCATION') || row.join('').toUpperCase().includes('STREET') || row.join('').toUpperCase().includes('ROUTE'))) {
                 return;
             }
@@ -487,8 +503,7 @@
             let errorsList = [];
             let fixesList = [];
             
-            let inlineDescription = row[0] ? row[0].trim() : `Line Block Entry Row #${rowIndex}`;
-            
+            let inlineDescription = row[0] ? row[0].trim() : `Row Block Profile Item #${actualSheetRowIndex}`;
             let totalRowStringDump = row.join(' ');
             let normalizedRowText = totalRowStringDump.toLowerCase();
 
@@ -500,77 +515,87 @@
                 let trimmedVal = cellValue.trim();
                 
                 if(/\bRd\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Rd" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Road".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Rd" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Road`);
                 }
                 if(/\bSt\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "St" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Street".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "St" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Street`);
                 }
                 if(/\bAve\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Ave" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Avenue".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Ave" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Avenue`);
                 }
                 if(/\bWy\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Wy" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Way".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Wy" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Way`);
                 }
                 if(/\bPl\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Pl" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Place".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Pl" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Place`);
                 }
                 if(/\bTer\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Ter" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Terrace".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Ter" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Terrace`);
                 }
                 if(/\bCres\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Cres" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Crescent".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Cres" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Crescent`);
                 }
                 if(/\bDr\b/g.test(trimmedVal)) {
-                    errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Dr" in cell column position [${colIdx + 1}].`);
-                    fixesList.push(`Expand string definition instantly to read fully as "Drive".`);
+                    errorsList.push(`Violation Rule 8: Shorthand abbreviation "Dr" detected in Column [${colIdx + 1}].`);
+                    fixesList.push(`Drive`);
+                }
+
+                let undocumentedAbbrevMatch = trimmedVal.match(/\b[A-Z][a-z]{1,2}\b\.?/g);
+                if(undocumentedAbbrevMatch) {
+                    undocumentedAbbrevMatch.forEach(abbrev => {
+                        if(!['At','On','By','In','To', 'No', 'Is'].includes(abbrev.replace('.',''))) {
+                            errorsList.push(`Dynamic Auto-Abbr Check: Suspicious sequence "${abbrev}" inside Column [${colIdx + 1}].`);
+                            fixesList.push(trimmedVal.replace(abbrev, abbrev.toUpperCase()));
+                        }
+                    });
                 }
             });
 
             if(normalizedRowText.includes("streeteine")) {
-                errorsList.push(`Typo Violation: Naming error found matching pattern string "Old Streeteine".`);
-                fixesList.push(`Normalize the designation label entry to 'Old Steine'.`);
+                errorsList.push(`Typo Violation: Spelling error matching layout sequence "Old Streeteine".`);
+                fixesList.push(`Old Steine`);
             }
             if(normalizedRowText.includes("trafargar")) {
-                errorsList.push(`Typo Violation: Spelling error found matching pattern string "Trafargar Street".`);
-                fixesList.push(`Correct string explicitly to read 'Trafalgar Street'.`);
+                errorsList.push(`Typo Violation: Spelling error matching layout sequence "Trafargar Street".`);
+                fixesList.push(`Trafalgar Street`);
             }
             if(normalizedRowText.includes("castle square") && !totalRowStringDump.includes("Castle Square")) {
-                errorsList.push(`Casing Inconsistency: Lowercase error formatting 'castle Square'.`);
-                fixesList.push(`Capitalize 'Castle Square' cleanly to match professional expectations.`);
+                errorsList.push(`Casing Inconsistency: Mixed formatting layout check on "castle Square".`);
+                fixesList.push(`Castle Square`);
             }
             if(normalizedRowText.includes("street nicholas")) {
-                errorsList.push(`Improper Nomenclature Layout: Road identified explicitly as 'Street Nicholas Road'.`);
-                fixesList.push(`Correct the sequence structural block to properly say 'Saint Nicholas Road'.`);
+                errorsList.push(`Improper Nomenclature Layout: Configured as 'Street Nicholas Road'.`);
+                fixesList.push(`Saint Nicholas Road`);
             }
 
             if(normalizedRowText.includes("no yellow cage") && 
               (normalizedRowText.includes("24hrs") || normalizedRowText.includes("all day") || normalizedRowText.includes("curb") || normalizedRowText.includes("offset"))) {
-                errorsList.push(`Rule 2 Structural Violation: Work data markers present despite a logged text statement declaring 'No yellow cage present'.`);
-                fixesList.push(`Wipe all cell markers blank for this stop profile. Remember Golden Rule 1: No yellow cage = no bus stop annotation.`);
+                errorsList.push(`Rule 2 Structural Violation: Tracking details active despite row notes indicating 'No yellow cage present'.`);
+                fixesList.push(`Clear Annotation Row`);
             }
 
             if(normalizedRowText.includes("inside a bus lane") && normalizedRowText.includes("24hrs") && (normalizedRowText.includes("whole block") || normalizedRowText.includes("all day"))) {
                 if(normalizedRowText.includes("complete") && (normalizedRowText.includes("offset") || normalizedRowText.includes("curb"))) {
-                    errorsList.push(`Rule 3 Overlap Fault: Separate standalone bus stop parameters recorded inside an active 24-Hour continuous bus lane track.`);
-                    fixesList.push(`Clear all independent attributes for the bus stop. The 24-Hour bus lane tracking logic takes full priority.`);
+                    errorsList.push(`Rule 3 Overlap Fault: Separate standalone attributes built over an active 24H Bus Lane track.`);
+                    fixesList.push(`Clear Independent Stop Values`);
                 }
             }
 
             if(normalizedRowText.includes("double yellow") && normalizedRowText.includes("red route")) {
-                errorsList.push(`Rule 6 Structural Violation: Double yellow line sections wrongly configured as a Red Route asset annotation.`);
-                fixesList.push(`Delete annotation entry immediately. Only double RED markings authorize a Red Route annotation.`);
+                errorsList.push(`Rule 6 Structural Violation: Double yellow section flagged improperly as a Red Route asset annotation.`);
+                fixesList.push(`Delete Asset Annotation Line`);
             }
 
             if(normalizedRowText.includes("painted red") && !normalizedRowText.includes("solid white") && normalizedRowText.includes("bike lane")) {
-                errorsList.push(`Rule 7 Boundary Fault: Row contains Bike Lane markings based entirely on Red Paint presence without lines support.`);
-                fixesList.push(`Discard annotation. Bike lanes require BOTH a Solid White outer line AND concurrent Double Yellow markings.`);
+                errorsList.push(`Rule 7 Boundary Fault: Identified Bike Lane marking lacking outer solid white layout lines.`);
+                fixesList.push(`Discard Bike Lane Row Object`);
             }
 
             let tr = document.createElement('tr');
@@ -581,10 +606,10 @@
                 tr.className = 'row-fail';
                 
                 let errHtml = `<ul class="critique-list">${errorsList.map(e => `<li>${e}</li>`).join('')}</ul>`;
-                let fixHtml = `<ul class="fix-list">${fixesList.map(f => `<li>${f}</li>`).join('')}</ul>`;
+                let fixHtml = `<ul class="fix-list">${fixesList.map(f => `<li onclick="copyToClipboard('${f.replace(/'/g, "\\'")}')">👉 Click to Copy: <strong>${f}</strong></li>`).join('')}</ul>`;
                 
                 tr.innerHTML = `
-                    <td><strong>${rowIndex}</strong></td>
+                    <td><strong style="color:var(--danger); font-size:1rem;">${actualSheetRowIndex}</strong></td>
                     <td style="font-weight:600; color:#cbd5e1; font-size:0.8rem;">${inlineDescription}</td>
                     <td><span class="status-pill pill-fail">MISTAKE</span></td>
                     <td>${errHtml}</td>
@@ -594,7 +619,7 @@
                 complianceCount++;
                 tr.className = 'row-pass';
                 tr.innerHTML = `
-                    <td>${rowIndex}</td>
+                    <td><strong style="color:var(--success);">${actualSheetRowIndex}</strong></td>
                     <td style="color:var(--text-muted); font-size:0.8rem;">${inlineDescription.substring(0, 80)}</td>
                     <td><span class="status-pill pill-pass">PASSED</span></td>
                     <td style="color:var(--text-muted);">Passed validation verification cleanly. No policy infractions found.</td>

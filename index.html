@@ -380,7 +380,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    </tbody>
+                </tbody>
             </table>
         </div>
     </div>
@@ -462,11 +462,10 @@
 
     function executeRowEvaluation(matrixData) {
         const logTableBody = document.querySelector('#discrepancyLogTable tbody');
-        logTableBody.innerHTML = ""; // Clear table elements
+        logTableBody.innerHTML = ""; 
         
         let headerRow = matrixData[0].map(h => h.trim().toUpperCase());
         
-        // Dynamic mapping check for the safe column indexes
         let safeColumnIndexes = [];
         headerRow.forEach((colName, index) => {
             if(colName === 'BS NAME' || colName === 'BUS STOP NAME' || colName === 'BS_NAME' || colName.includes('STOP NAME')) {
@@ -480,7 +479,6 @@
         let totalPenalties = 0;
 
         matrixData.forEach((row, rowIndex) => {
-            // Prevent parsing structural system headers as an actual data worker row
             if(rowIndex === 0 && (row.join('').toUpperCase().includes('LOCATION') || row.join('').toUpperCase().includes('STREET') || row.join('').toUpperCase().includes('ROUTE'))) {
                 return;
             }
@@ -489,25 +487,18 @@
             let errorsList = [];
             let fixesList = [];
             
-            // Build text indicators for tracking parameters
             let inlineDescription = row[0] ? row[0].trim() : `Line Block Entry Row #${rowIndex}`;
             
-            // Extract layout attributes across cells for advanced context cross-checks
             let totalRowStringDump = row.join(' ');
             let normalizedRowText = totalRowStringDump.toLowerCase();
 
-            // --- EVALUATION INTERFACE ENGINE RULE LOGIC ---
-
-            // Rule 8 Implementation: Strict Full Street Name Checker with Context Safe Filtering
             row.forEach((cellValue, colIdx) => {
-                // If this exact column index matches a safe column, bypass the strict abbreviation rule completely
                 if (safeColumnIndexes.includes(colIdx)) {
                     return; 
                 }
 
                 let trimmedVal = cellValue.trim();
                 
-                // Regex matches to enforce isolated word boundary targets strictly
                 if(/\bRd\b/g.test(trimmedVal)) {
                     errorsList.push(`Violation Rule 8 (Abbreviation Exception): Used shorthand "Rd" in cell column position [${colIdx + 1}].`);
                     fixesList.push(`Expand string definition instantly to read fully as "Road".`);
@@ -542,7 +533,6 @@
                 }
             });
 
-            // Rule 8 Typo Sanitization checks
             if(normalizedRowText.includes("streeteine")) {
                 errorsList.push(`Typo Violation: Naming error found matching pattern string "Old Streeteine".`);
                 fixesList.push(`Normalize the designation label entry to 'Old Steine'.`);
@@ -560,14 +550,12 @@
                 fixesList.push(`Correct the sequence structural block to properly say 'Saint Nicholas Road'.`);
             }
 
-            // Rule 2 Check: Missing Yellow Cages Verification Logic
             if(normalizedRowText.includes("no yellow cage") && 
               (normalizedRowText.includes("24hrs") || normalizedRowText.includes("all day") || normalizedRowText.includes("curb") || normalizedRowText.includes("offset"))) {
                 errorsList.push(`Rule 2 Structural Violation: Work data markers present despite a logged text statement declaring 'No yellow cage present'.`);
                 fixesList.push(`Wipe all cell markers blank for this stop profile. Remember Golden Rule 1: No yellow cage = no bus stop annotation.`);
             }
 
-            // Rule 3 Check: Duplicated Bus Stop tracking parameters logged inside continuous 24-Hour Active Lanes
             if(normalizedRowText.includes("inside a bus lane") && normalizedRowText.includes("24hrs") && (normalizedRowText.includes("whole block") || normalizedRowText.includes("all day"))) {
                 if(normalizedRowText.includes("complete") && (normalizedRowText.includes("offset") || normalizedRowText.includes("curb"))) {
                     errorsList.push(`Rule 3 Overlap Fault: Separate standalone bus stop parameters recorded inside an active 24-Hour continuous bus lane track.`);
@@ -575,19 +563,16 @@
                 }
             }
 
-            // Rule 6 Check: Double Yellow lines flagged mistakenly as Red Routes
             if(normalizedRowText.includes("double yellow") && normalizedRowText.includes("red route")) {
                 errorsList.push(`Rule 6 Structural Violation: Double yellow line sections wrongly configured as a Red Route asset annotation.`);
                 fixesList.push(`Delete annotation entry immediately. Only double RED markings authorize a Red Route annotation.`);
             }
 
-            // Rule 7 Check: Mistaken Bike Lane tracking allocations
             if(normalizedRowText.includes("painted red") && !normalizedRowText.includes("solid white") && normalizedRowText.includes("bike lane")) {
                 errorsList.push(`Rule 7 Boundary Fault: Row contains Bike Lane markings based entirely on Red Paint presence without lines support.`);
                 fixesList.push(`Discard annotation. Bike lanes require BOTH a Solid White outer line AND concurrent Double Yellow markings.`);
             }
 
-            // Compile data logs directly into DOM tree elements
             let tr = document.createElement('tr');
             
             if(errorsList.length > 0) {
@@ -619,10 +604,8 @@
             logTableBody.appendChild(tr);
         });
 
-        // Compute Live Accuracy metrics values
         let computedAccuracy = totals > 0 ? ((complianceCount / totals) * 100).toFixed(1) : "0.0";
 
-        // Display results to user
         document.getElementById('valTotal').innerText = totals;
         document.getElementById('valPass').innerText = complianceCount;
         document.getElementById('valFail').innerText = violationCount;
@@ -630,7 +613,6 @@
         
         document.getElementById('headerAccuracy').innerText = `${computedAccuracy}%`;
         
-        // Handle accuracy colors dynamically based on compliance thresholds
         let accElement = document.getElementById('headerAccuracy');
         if(parseFloat(computedAccuracy) >= 95.0) {
             accElement.style.color = "var(--success)";
@@ -643,11 +625,9 @@
             accElement.style.textShadow = "0 0 10px rgba(239,68,68,0.3)";
         }
 
-        // Render sections active
         document.getElementById('metricsRow').style.display = "grid";
         document.getElementById('resultsContainer').style.display = "block";
         
-        // Wipe local copy memory to allow structural resets
         globalParsedMatrix = null;
     }
 </script>

@@ -181,6 +181,7 @@
             color: #0b0f19;
             font-weight: 700;
             border: none;
+            padding: 10px 166x;
             padding: 10px 16px;
             border-radius: 6px;
             cursor: pointer;
@@ -351,7 +352,7 @@
                     <li><strong>Rule 6 (Red Routes):</strong> Double Red lines require 24/7 Red Route annotation. Double Yellow lines are strictly excluded.</li>
                     <li><strong>Rule 7 (Bike Lanes):</strong> Requires concurrent Solid White line and Double Yellow lines/blips to annotate. Paint alone is disqualified.</li>
                     <li><strong>Rule 8 (Street Names):</strong> Complete expanded word strings required across all column entries (<span style="color:var(--danger)">No Rd, St, Ave, Wy, Pl</span>).</li>
-                    <li><strong>Rule 9 (Sentence Capitalization):</strong> All cells except protected transit stop names must begin with a capital letter.</li>
+                    <li style="color: var(--text-muted); font-style: italic;">[Rule 9 Deactivated]</li>
                     <li><strong style="color:var(--warning)">CRITICAL PROTECTED EXCHANGES:</strong> System completely skips scanning structural columns matching <code>BS NAME</code>, <code>BUS NAME</code>, <code>BUS STOP NAME</code>, <code>MC LINKS</code>, or <code>VIDEO NAME</code> globally across data cycles.</li>
                 </ul>
             </div>
@@ -557,13 +558,6 @@
                 if(/\bDr\b/g.test(trimmedVal)) {
                     errorsList.push(`Violation Rule 8: Shorthand abbreviation "Dr" detected in Column [${colIdx + 1}].`);
                     fixesList.push(`Expand shorthand text to full form "Drive"`);
-                }
-
-                // Sentence Casing Formatting Quality Rule Validation
-                let firstChar = trimmedVal.charAt(0);
-                if (firstChar !== firstChar.toUpperCase() && isNaN(firstChar)) {
-                    errorsList.push(`Casing Rule Violation: Cell sentence sequence context in Column [${colIdx + 1}] must start with a Capital letter.`);
-                    fixesList.push(`Apply Sentence Case: Modify entry to "${trimmedVal.charAt(0).toUpperCase() + trimmedVal.slice(1)}"`);
                 }
             });
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>METRIX CHECK POINT/FLAGS</title>
+    <title>METRIX CHECK POINT/FLAGS - Pro Edition</title>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -298,7 +298,7 @@
 <div class="container">
     <header>
         <div>
-            <h1>METRIX CHECK POINT/FLAGS <span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.5 PRO</span></h1>
+            <h1>METRIX CHECK POINT/FLAGS<span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.5 PRO</span></h1>
             <p class="subtitle">Automated Coworker Quality Control & Auditing Workspace</p>
         </div>
         <div class="metric-card" style="padding: 10px 24px; min-width: 150px; background: #0b111e;">
@@ -472,25 +472,22 @@
     }
 
     function executeRowEvaluation(matrixData) {
+        if (!matrixData || matrixData.length === 0) return;
+
         const logTableBody = document.querySelector('#discrepancyLogTable tbody');
         logTableBody.innerHTML = ""; 
         
-        let headerRow = matrixData[0].map(h => h.trim().toUpperCase().replace(/[\s_]+/g, ' '));
+        // Normalize headers strictly removing all quotes, spaces, and punctuation down to pure alphanumeric letters
+        let headerRow = matrixData[0].map(h => h.replace(/["']/g, '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''));
         
         let safeColumnIndexes = [];
         headerRow.forEach((colName, index) => {
             if(
-                colName === 'BS NAME' || 
-                colName === 'BUS NAME' || 
-                colName === 'BUS STOP NAME' || 
-                colName === 'BS NAME' || 
-                colName.includes('STOP NAME') ||
-                colName === 'MC LINKS' ||
-                colName === 'MC LINKS' ||
-                colName === 'MCLINKS' ||
-                colName === 'VIDEO NAME' ||
-                colName === 'VIDEO NAME' ||
-                colName === 'VIDEONAME'
+                colName.includes('BSNAME') || 
+                colName.includes('BUSNAME') || 
+                colName.includes('STOPNAME') ||
+                colName.includes('MCLINKS') ||
+                colName.includes('VIDEONAME')
             ) {
                 safeColumnIndexes.push(index);
             }
@@ -504,7 +501,8 @@
         matrixData.forEach((row, rowIndex) => {
             let actualSheetRowIndex = rowIndex + 1; 
 
-            if(rowIndex === 0 && (row.join('').toUpperCase().includes('LOCATION') || row.join('').toUpperCase().includes('STREET') || row.join('').toUpperCase().includes('ROUTE'))) {
+            // IMMUTABLE SAFETY: Permanently bypass row 0 (Header Row) from processing logic
+            if(rowIndex === 0) {
                 return;
             }
 
@@ -512,7 +510,7 @@
             let errorsList = [];
             let fixesList = [];
             
-            let inlineDescription = row[0] ? row[0].trim() : `Row Block Profile Item #${actualSheetRowIndex}`;
+            let inlineDescription = row[0] ? row[0].replace(/["']/g, '').trim() : `Row Block Profile Item #${actualSheetRowIndex}`;
             let totalRowStringDump = row.filter((_, idx) => !safeColumnIndexes.includes(idx)).join(' ');
             let normalizedRowText = totalRowStringDump.toLowerCase();
 
@@ -521,7 +519,7 @@
                     return; 
                 }
 
-                let trimmedVal = cellValue.trim();
+                let trimmedVal = cellValue.replace(/["']/g, '').trim();
                 if(!trimmedVal) return;
                 
                 // Rule 8 Abbreviations Expanded Street Checking Validations

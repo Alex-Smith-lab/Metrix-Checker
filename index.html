@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>>METRIX CHECK POINT/FLAGS - Pro Edition</title>
+    <title>METRIX CHECK POINT/FLAGS - Pro Edition</title>
     <style>
         :root {
             --bg-main: #0b0f19;
@@ -301,7 +301,7 @@
 <div class="container">
     <header>
         <div>
-            <h1>METRIX CHECK POINT/FLAGS <span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.5 PRO</span></h1>
+            <h1>METRIX CHECK POINT/FLAGSe <span style="font-size:0.8rem; vertical-align:middle; background:#1e293b; color:var(--primary); padding:3px 8px; border-radius:4px; margin-left:8px;">V2.5 PRO</span></h1>
             <p class="subtitle">Automated Coworker Quality Control & Auditing Workspace</p>
         </div>
         <div class="metric-card" style="padding: 10px 24px; min-width: 150px; background: #0b111e;">
@@ -485,7 +485,6 @@
         const logTableBody = document.querySelector('#discrepancyLogTable tbody');
         logTableBody.innerHTML = ""; 
         
-        // Normalize headers strictly removing all quotes, spaces, and punctuation
         let headerRow = matrixData[0].map(h => h.replace(/["']/g, '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''));
         
         let safeColumnIndexes = [];
@@ -518,7 +517,6 @@
         matrixData.forEach((row, rowIndex) => {
             let actualSheetRowIndex = rowIndex + 1; 
 
-            // IMMUTABLE SAFETY: Permanently bypass row 0 (Header Row) from processing logic
             if(rowIndex === 0) {
                 return;
             }
@@ -531,23 +529,21 @@
             let totalRowStringDump = row.filter((_, idx) => !safeColumnIndexes.includes(idx)).join(' ');
             let normalizedRowText = totalRowStringDump.toLowerCase();
 
-            // Extract values specifically for Classification and Notes rules tracking
             let cellClassification = (classificationColIdx !== -1 && row[classificationColIdx]) ? row[classificationColIdx].replace(/["']/g, '').trim().toUpperCase() : "";
-            // Clean up internal whitespaces to protect loose parsing of long text strings inside the cell
             let cellNotes = (notesColIdx !== -1 && row[notesColIdx]) ? row[notesColIdx].replace(/["']/g, '').trim().toLowerCase().replace(/\s+/g, ' ') : "";
 
             // --- TARGET RULE INTEGRATIONS ---
             const yellowCageNoteString = "no yellow cage present, do not annotate";
             
-            // Check if classification contains 'B' anywhere (e.g., "B", "A and B", "B & A")
+            // Check if B has no notes matching the cage string
             if (cellClassification.includes("B")) {
                 if (!cellNotes.includes(yellowCageNoteString)) {
                     errorsList.push(`Rule 2B Violation: Classification contains 'B' but Notes are missing the required string "${yellowCageNoteString}".`);
-                    fixesList.push(`Add required note: "${yellowCageNoteString}" on Row ${actualSheetRowIndex}.`);
+                    fixesList.push(`Add required note: "No yellow cage present, Do not annotate" on Row ${actualSheetRowIndex}.`);
                 }
             }
 
-            // Only trigger a strict 'A' contradiction if 'B' is completely missing from the classification cell
+            // Flag when classification contains A exclusively but the notes string is present
             if (cellNotes.includes(yellowCageNoteString)) {
                 if (cellClassification.includes("A") && !cellClassification.includes("B")) {
                     errorsList.push(`Rule 2A Contradiction Fault: Classification is set to 'A' exclusively but notes explicitly specify "${yellowCageNoteString}".`);
@@ -564,7 +560,6 @@
                 let trimmedVal = cellValue.replace(/["']/g, '').trim();
                 if(!trimmedVal) return;
                 
-                // Rule 8 Abbreviations Expanded Street Checking Validations
                 if(/\bRd\b/g.test(trimmedVal)) {
                     errorsList.push(`Violation Rule 8: Shorthand abbreviation "Rd" detected in Column [${colIdx + 1}].`);
                     fixesList.push(`Rule 8 Violated: Change "Rd" to full name "Road" in Column [${colIdx + 1}].`);
